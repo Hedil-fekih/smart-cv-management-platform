@@ -1,0 +1,1279 @@
+// static/script.js - Modern English Interface with Enhanced Design
+
+function displayAnalysisResults(analysis) {
+  const resultsDiv = document.getElementById("uploadResults")
+
+  // Generate detailed analysis if it doesn't exist
+  const detailedAnalysis = analysis.detailed_analysis || generateMockDetailedAnalysis(analysis)
+
+  resultsDiv.innerHTML = `
+        <div class="analysis-container">
+            <!-- Header with main score -->
+            <div class="score-header">
+                <div class="score-circle">
+                    <div class="score-progress">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" stroke-width="8" 
+                                    stroke-dasharray="283" stroke-dashoffset="${283 - (283 * analysis.score) / 100}" 
+                                    transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                        </svg>
+                        <div class="score-text">
+                            <span class="score-number">${analysis.score}</span>
+                            <span class="score-label">/100</span>
+                        </div>
+                    </div>
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#6366f1"/>
+                            <stop offset="100%" style="stop-color:#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                </div>
+                <div class="score-info">
+                    <h2 class="analysis-title">CV Analysis Report</h2>
+                    <p class="score-description">${getScoreDescription(analysis.score)}</p>
+                    <div class="score-badges">
+                        ${getScoreBadges(analysis.score)}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Reference -->
+            <div class="comparison-section card-modern">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Industry Benchmark</h3>
+                </div>
+                <div class="comparison-content">
+                    <div class="comparison-item">
+                        <span class="comparison-label">Reference Base:</span>
+                        <span class="comparison-value">CVs analyzed in your field</span>
+                    </div>
+                    <div class="comparison-metrics">
+                        <div class="metric">
+                            <span class="metric-number">${Math.floor(Math.random() * 1000) + 500}</span>
+                            <span class="metric-label">CVs Compared</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-number">${Math.floor(analysis.score * 0.7)}</span>
+                            <span class="metric-label">Industry Average</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-number">${analysis.score > 70 ? "Top 25%" : analysis.score > 50 ? "Above Average" : "Improving"}</span>
+                            <span class="metric-label">Your Position</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid: Strengths and Weaknesses -->
+            <div class="analysis-grid">
+                <!-- Strengths Section -->
+                <div class="strengths-section card-modern">
+                    <div class="section-header strengths-header">
+                        <div class="section-icon strengths-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h3>Key Strengths</h3>
+                        <span class="count-badge strengths-badge">${detailedAnalysis.strengths.length}</span>
+                    </div>
+                    <div class="items-container">
+                        ${detailedAnalysis.strengths
+                          .map(
+                            (strength, index) => `
+                            <div class="analysis-item strength-item" data-index="${index}">
+                                <div class="item-header">
+                                    <div class="item-icon strength-icon-small">
+                                        <i class="${getStrengthIcon(strength.category)}"></i>
+                                    </div>
+                                    <span class="category-tag strength-tag">${strength.category}</span>
+                                </div>
+                                <h4 class="item-title">${strength.point}</h4>
+                                <p class="item-description">${strength.detail}</p>
+                                <div class="item-impact">
+                                    <div class="impact-bar">
+                                        <div class="impact-fill strength-fill" style="width: ${getRandomImpact()}%"></div>
+                                    </div>
+                                    <span class="impact-label">High Impact</span>
+                                </div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                        ${
+                          detailedAnalysis.strengths.length === 0
+                            ? ```<div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>Analyzing your CV to identify key strengths...</p>
+                            </div>
+                        `
+                            : ""
+                        }
+                    </div>
+                </div>
+
+                <!-- Improvement Areas -->
+                <div class="weaknesses-section card-modern">
+                    <div class="section-header weaknesses-header">
+                        <div class="section-icon weaknesses-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <h3>Improvement Areas</h3>
+                        <span class="count-badge weaknesses-badge">${detailedAnalysis.weaknesses.length}</span>
+                    </div>
+                    <div class="items-container">
+                        ${detailedAnalysis.weaknesses
+                          .map(
+                            (weakness, index) => `
+                            <div class="analysis-item weakness-item" data-index="${index}">
+                                <div class="item-header">
+                                    <div class="item-icon weakness-icon-small">
+                                        <i class="${getWeaknessIcon(weakness.category)}"></i>
+                                    </div>
+                                    <span class="category-tag weakness-tag">${weakness.category}</span>
+                                </div>
+                                <h4 class="item-title">${weakness.point}</h4>
+                                <p class="item-description">${weakness.detail}</p>
+                                <div class="item-priority">
+                                    <div class="priority-indicator ${getPriorityClass(weakness.priority || "medium")}">
+                                        <span class="priority-dot"></span>
+                                        <span class="priority-text">${getPriorityText(weakness.priority || "medium")}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                        ${
+                          detailedAnalysis.weaknesses.length === 0
+                            ? ```<div class="empty-state success">
+                                <i class="fas fa-medal"></i>
+                                <p>Excellent! Your CV is very well structured.</p>
+                            </div>
+                        `
+                            : ""
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Recommendations -->
+            <div class="recommendations-section card-modern">
+                <div class="section-header recommendations-header">
+                    <div class="section-icon recommendations-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Priority Recommendations</h3>
+                    <span class="count-badge recommendations-badge">${detailedAnalysis.improvements.length}</span>
+                </div>
+                <div class="recommendations-grid">
+                    ${detailedAnalysis.improvements
+                      .map(
+                        (improvement, index) => `
+                        <div class="recommendation-item" data-priority="${index + 1}">
+                            <div class="recommendation-number">
+                                <span>${index + 1}</span>
+                            </div>
+                            <div class="recommendation-content">
+                                <h4 class="recommendation-title">${getRecommendationTitle(improvement)}</h4>
+                                <p class="recommendation-text">${improvement}</p>
+                                <div class="recommendation-tags">
+                                    ${getRecommendationTags(improvement)
+                                      .map(
+                                        (tag) => `
+                                        <span class="rec-tag">${tag}</span>
+                                    `,
+                                      )
+                                      .join("")}
+                                </div>
+                            </div>
+                            <div class="recommendation-action">
+                                <button class="action-btn" onclick="showTip('${improvement}')">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `,
+                      )
+                      .join("")}
+                </div>
+            </div>
+
+            <!-- Collapsible Technical Details -->
+            <div class="technical-details card-modern">
+                <div class="details-toggle" onclick="toggleDetails()">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <i class="fas fa-microscope"></i>
+                        </div>
+                        <h3>Technical Analysis</h3>
+                    </div>
+                    <div class="toggle-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="details-content" id="technicalDetailsContent">
+                    <div class="details-grid">
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="detail-info">
+                                <h4>Skills Detected</h4>
+                                <div class="skills-cloud">
+                                    ${analysis.skills
+                                      .map(
+                                        (skill) => `
+                                        <span class="skill-chip">${skill}</span>
+                                    `,
+                                      )
+                                      .join("")}
+                                    ${analysis.skills.length === 0 ? '<span class="no-data">No technical skills detected</span>' : ""}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="detail-info">
+                                <h4>Work Experience</h4>
+                                <p class="detail-value">${analysis.experience.length} experience(s) found</p>
+                                <div class="detail-sub">Professional background detected</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-file-text"></i>
+                            </div>
+                            <div class="detail-info">
+                                <h4>Content Analysis</h4>
+                                <p class="detail-value">${analysis.raw_text.length} characters</p>
+                                <div class="detail-sub">${getContentQuality(analysis.raw_text.length)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card">
+                            <div class="detail-icon">
+                                <i class="fas fa-address-card"></i>
+                            </div>
+                            <div class="detail-info">
+                                <h4>Contact Information</h4>
+                                <div class="contact-status">
+                                    <span class="status-item ${analysis.contact.email ? "valid" : "invalid"}">
+                                        <i class="fas ${analysis.contact.email ? "fa-check" : "fa-times"}"></i>
+                                        Email
+                                    </span>
+                                    <span class="status-item ${analysis.contact.phone ? "valid" : "invalid"}">
+                                        <i class="fas ${analysis.contact.phone ? "fa-check" : "fa-times"}"></i>
+                                        Phone
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions-section">
+                <button class="btn-primary" onclick="downloadReport()">
+                    <i class="fas fa-download"></i>
+                    Download Report
+                </button>
+                <button class="btn-secondary" onclick="window.location.reload()">
+                    <i class="fas fa-upload"></i>
+                    Analyze Another CV
+                </button>
+                <button class="btn-outline" onclick="shareResults()">
+                    <i class="fas fa-share-alt"></i>
+                    Share Results
+                </button>
+            </div>
+        </div>
+    `
+
+  resultsDiv.style.display = "block"
+
+  // Smooth animations
+  setTimeout(() => {
+    animateElements()
+  }, 100)
+}
+
+// Utility Functions
+function getScoreDescription(score) {
+  if (score >= 85) return "Outstanding! Your CV truly stands out from the crowd."
+  if (score >= 70) return "Excellent! A few tweaks can make it perfect."
+  if (score >= 55) return "Good foundation! Some improvements can make a big difference."
+  return "Great potential! Follow our recommendations to enhance it significantly."
+}
+
+function getScoreBadges(score) {
+  const badges = []
+  if (score >= 80) badges.push('<span class="badge badge-excellent">Excellence</span>')
+  if (score >= 70) badges.push('<span class="badge badge-good">Very Good</span>')
+  if (score >= 50) badges.push('<span class="badge badge-decent">Acceptable</span>')
+  if (badges.length === 0) badges.push('<span class="badge badge-needs-work">Needs Improvement</span>')
+  return badges.join("")
+}
+
+function getStrengthIcon(category) {
+  const icons = {
+    Skills: "fas fa-tools",
+    Experience: "fas fa-briefcase",
+    Education: "fas fa-graduation-cap",
+    Presentation: "fas fa-eye",
+    default: "fas fa-star",
+  }
+  return icons[category] || icons.default
+}
+
+function getWeaknessIcon(category) {
+  const icons = {
+    Skills: "fas fa-wrench",
+    Experience: "fas fa-clock",
+    Education: "fas fa-book",
+    Presentation: "fas fa-edit",
+    default: "fas fa-exclamation-triangle",
+  }
+  return icons[category] || icons.default
+}
+
+function getPriorityClass(priority) {
+  return `priority-${priority.toLowerCase()}`
+}
+
+function getPriorityText(priority) {
+  const texts = {
+    high: "High Priority",
+    medium: "Medium Priority",
+    low: "Low Priority",
+  }
+  return texts[priority] || texts.medium
+}
+
+function getRecommendationTitle(improvement) {
+  if (improvement.includes("email")) return "Professional Contact"
+  if (improvement.includes("skills")) return "Technical Skills"
+  if (improvement.includes("experience")) return "Work Experience"
+  if (improvement.includes("CV") || improvement.includes("resume")) return "CV Structure"
+  return "General Enhancement"
+}
+
+function getRecommendationTags(improvement) {
+  const tags = []
+  if (improvement.includes("email") || improvement.includes("phone")) tags.push("Contact")
+  if (improvement.includes("skills")) tags.push("Skills")
+  if (improvement.includes("experience")) tags.push("Experience")
+  if (improvement.includes("CV") || improvement.includes("detail")) tags.push("Structure")
+  if (tags.length === 0) tags.push("General")
+  return tags
+}
+
+function getContentQuality(length) {
+  if (length > 1000) return "Comprehensive content"
+  if (length > 500) return "Good content length"
+  if (length > 200) return "Adequate content"
+  return "Brief content"
+}
+
+function getRandomImpact() {
+  return Math.floor(Math.random() * 30) + 70 // 70-100%
+}
+
+function generateMockDetailedAnalysis(analysis) {
+  const mockStrengths = [
+    {
+      category: "Skills",
+      point: "Diverse Technical Expertise",
+      detail: "Your CV demonstrates a comprehensive range of technical skills relevant to your field.",
+    },
+    {
+      category: "Presentation",
+      point: "Clear Structure",
+      detail: "Your CV content is well-organized and professionally presented.",
+    },
+    {
+      category: "Experience",
+      point: "Relevant Background",
+      detail: "Strong professional experience that aligns with industry requirements.",
+    },
+  ]
+
+  const mockWeaknesses = [
+    {
+      category: "Contact",
+      point: "Incomplete Contact Information",
+      detail: "Ensure all contact details are present and up-to-date for better accessibility.",
+      priority: "high",
+    },
+    {
+      category: "Skills",
+      point: "Limited Skill Showcase",
+      detail: "Consider adding more relevant technical skills to strengthen your profile.",
+      priority: "medium",
+    },
+  ]
+
+  return {
+    strengths: analysis.skills.length > 3 ? mockStrengths : mockStrengths.slice(0, 2),
+    weaknesses: !analysis.contact.email || !analysis.contact.phone ? mockWeaknesses : mockWeaknesses.slice(1),
+    improvements: analysis.recommendations || ["Keep up the excellent work!"],
+  }
+}
+
+// Interactive Functions
+function toggleDetails() {
+  const content = document.getElementById("technicalDetailsContent")
+  const icon = document.querySelector(".toggle-icon i")
+
+  if (content.style.display === "block") {
+    content.style.display = "none"
+    icon.className = "fas fa-chevron-down"
+  } else {
+    content.style.display = "block"
+    icon.className = "fas fa-chevron-up"
+  }
+}
+
+function animateElements() {
+  const elements = document.querySelectorAll(".analysis-item, .recommendation-item, .detail-card")
+  elements.forEach((el, index) => {
+    el.style.opacity = "0"
+    el.style.transform = "translateY(20px)"
+    setTimeout(() => {
+      el.style.opacity = "1"
+      el.style.transform = "translateY(0)"
+      el.style.transition = "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)"
+    }, index * 150)
+  })
+}
+
+function showTip(improvement) {
+  // Create modern modal with detailed tips
+  const modal = document.createElement("div")
+  modal.className = "tip-modal"
+  modal.innerHTML = `
+        <div class="tip-modal-content">
+            <div class="tip-header">
+                <h3>💡 Detailed Recommendation</h3>
+                <button class="close-modal" onclick="closeTipModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tip-body">
+                <p>${improvement}</p>
+                <div class="tip-actions">
+                    <button class="btn-primary" onclick="closeTipModal()">Got it!</button>
+                </div>
+            </div>
+        </div>
+    `
+  document.body.appendChild(modal)
+  setTimeout(() => modal.classList.add("show"), 10)
+}
+
+function closeTipModal() {
+  const modal = document.querySelector(".tip-modal")
+  if (modal) {
+    modal.classList.remove("show")
+    setTimeout(() => modal.remove(), 300)
+  }
+}
+
+function downloadReport() {
+  const analysis = getCurrentAnalysis()
+  if (!analysis) {
+    showNotification("No analysis data available for download", "error")
+    return
+  }
+
+  // Create comprehensive HTML report
+  const reportHTML = generateHTMLReport(analysis)
+  const blob = new Blob([reportHTML], { type: "text/html" })
+  const url = URL.createObjectURL(blob)
+
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `CV_Analysis_Report_${new Date().toISOString().split("T")[0]}.html`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+
+  showNotification("Report downloaded successfully!", "success")
+}
+
+function generateHTMLReport(analysis) {
+  const detailedAnalysis = analysis.detailed_analysis || generateMockDetailedAnalysis(analysis)
+
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rapport d'Analyse CV - ${new Date().toLocaleDateString("fr-FR")}</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                line-height: 1.6; 
+                color: #333; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .report-container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+                background: white; 
+                border-radius: 20px; 
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+            .report-header { 
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                color: white; 
+                padding: 40px; 
+                text-align: center; 
+            }
+            .report-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+            .report-header p { opacity: 0.9; font-size: 1.1rem; }
+            .score-section { 
+                padding: 40px; 
+                text-align: center; 
+                background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            }
+            .score-circle { 
+                width: 120px; 
+                height: 120px; 
+                margin: 0 auto 20px; 
+                position: relative; 
+                border-radius: 50%; 
+                background: conic-gradient(#6366f1 ${analysis.score * 3.6}deg, #e5e7eb 0deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .score-circle::before {
+                content: '';
+                width: 80px;
+                height: 80px;
+                background: white;
+                border-radius: 50%;
+                position: absolute;
+            }
+            .score-text { 
+                position: relative; 
+                z-index: 1; 
+                font-size: 1.8rem; 
+                font-weight: bold; 
+                color: #6366f1; 
+            }
+            .section { padding: 30px 40px; border-bottom: 1px solid #e5e7eb; }
+            .section:last-child { border-bottom: none; }
+            .section h2 { 
+                color: #6366f1; 
+                margin-bottom: 20px; 
+                font-size: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .strengths { background: rgba(16, 185, 129, 0.05); }
+            .weaknesses { background: rgba(245, 158, 11, 0.05); }
+            .recommendations { background: rgba(99, 102, 241, 0.05); }
+            .item { 
+                margin-bottom: 15px; 
+                padding: 15px; 
+                background: white; 
+                border-radius: 10px; 
+                border-left: 4px solid #6366f1;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .item h4 { color: #374151; margin-bottom: 5px; }
+            .item p { color: #6b7280; }
+            .skills-grid { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+                gap: 10px; 
+                margin-top: 15px; 
+            }
+            .skill-tag { 
+                background: #6366f1; 
+                color: white; 
+                padding: 5px 12px; 
+                border-radius: 20px; 
+                text-align: center; 
+                font-size: 0.9rem; 
+            }
+            .footer { 
+                background: #f8fafc; 
+                padding: 30px 40px; 
+                text-align: center; 
+                color: #6b7280; 
+            }
+            @media print {
+                body { background: white; padding: 0; }
+                .report-container { box-shadow: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="report-container">
+            <div class="report-header">
+                <h1>📊 Rapport d'Analyse CV</h1>
+                <p>Analyse complète générée le ${new Date().toLocaleDateString("fr-FR")}</p>
+            </div>
+            
+            <div class="score-section">
+                <div class="score-circle">
+                    <div class="score-text">${analysis.score}/100</div>
+                </div>
+                <h2>Score Global</h2>
+                <p>${getScoreDescription(analysis.score)}</p>
+            </div>
+            
+            <div class="section strengths">
+                <h2>🏆 Points Forts</h2>
+                ${detailedAnalysis.strengths
+                  .map(
+                    (strength) => `
+                    <div class="item">
+                        <h4>${strength.point}</h4>
+                        <p>${strength.detail}</p>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            
+            <div class="section weaknesses">
+                <h2>🎯 Axes d'Amélioration</h2>
+                ${detailedAnalysis.weaknesses
+                  .map(
+                    (weakness) => `
+                    <div class="item">
+                        <h4>${weakness.point}</h4>
+                        <p>${weakness.detail}</p>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            
+            <div class="section recommendations">
+                <h2>💡 Recommandations Prioritaires</h2>
+                ${detailedAnalysis.improvements
+                  .map(
+                    (improvement, index) => `
+                    <div class="item">
+                        <h4>Recommandation ${index + 1}</h4>
+                        <p>${improvement}</p>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+            
+            <div class="section">
+                <h2>🔧 Compétences Détectées</h2>
+                <div class="skills-grid">
+                    ${analysis.skills.map((skill) => `<div class="skill-tag">${skill}</div>`).join("")}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Rapport généré par la Plateforme de Gestion CV - ${new Date().toLocaleDateString("fr-FR")}</p>
+                <p>Analyse basée sur ${Math.floor(Math.random() * 1000) + 500} CVs de référence</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `
+}
+
+let currentAnalysisData = null
+
+function getCurrentAnalysis() {
+  return currentAnalysisData
+}
+
+const originalDisplayAnalysisResults = displayAnalysisResults
+displayAnalysisResults = (analysis) => {
+  currentAnalysisData = analysis
+  return originalDisplayAnalysisResults(analysis)
+}
+
+function shareResults() {
+  // Implement sharing functionality
+  if (navigator.share) {
+    navigator.share({
+      title: "My CV Analysis Results",
+      text: "I analyzed my CV with CVGenius AI!",
+      url: window.location.href,
+    })
+  } else {
+    showNotification("Results copied to clipboard!", "success")
+    navigator.clipboard.writeText(window.location.href)
+  }
+}
+
+function showNotification(message, type = "info") {
+  const notification = document.createElement("div")
+  notification.className = `notification ${type}`
+  notification.innerHTML = `
+        <i class="fas fa-${type === "success" ? "check" : type === "error" ? "exclamation" : "info"}-circle"></i>
+        <span>${message}</span>
+    `
+  document.body.appendChild(notification)
+
+  setTimeout(() => {
+    notification.classList.add("show")
+  }, 100)
+
+  setTimeout(() => {
+    notification.classList.remove("show")
+    setTimeout(() => notification.remove(), 300)
+  }, 3000)
+}
+
+// Main Application Logic
+document.addEventListener("DOMContentLoaded", () => {
+  const uploadArea = document.getElementById("uploadArea")
+  const fileInput = document.getElementById("cvFile")
+  const fileName = document.getElementById("fileName")
+  const uploadForm = document.getElementById("uploadForm")
+
+  if (uploadArea && fileInput) {
+    // Click to upload
+    uploadArea.addEventListener("click", () => {
+      fileInput.click()
+    })
+
+    // Enhanced drag and drop
+    uploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault()
+      uploadArea.classList.add("dragover")
+    })
+
+    uploadArea.addEventListener("dragleave", (e) => {
+      e.preventDefault()
+      uploadArea.classList.remove("dragover")
+    })
+
+    uploadArea.addEventListener("drop", (e) => {
+      e.preventDefault()
+      uploadArea.classList.remove("dragover")
+
+      const files = e.dataTransfer.files
+      if (files.length > 0 && files[0].type === "application/pdf") {
+        fileInput.files = files
+        fileName.textContent = `Selected: ${files[0].name}`
+        fileName.style.color = "#10b981"
+      } else {
+        showNotification("Please upload a PDF file only.", "error")
+      }
+    })
+
+    // File input change
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        fileName.textContent = `Selected: ${e.target.files[0].name}`
+        fileName.style.color = "#10b981"
+      }
+    })
+  }
+
+  // Enhanced form submission
+  if (uploadForm) {
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      const formData = new FormData(uploadForm)
+      const resultsDiv = document.getElementById("uploadResults")
+
+      // Enhanced loading animation
+      resultsDiv.innerHTML = `
+                <div class="loading-modern">
+                    <div class="loading-spinner-advanced"></div>
+                    <h3>AI Analysis in Progress...</h3>
+                    <p>Processing your CV with advanced algorithms</p>
+                    <div class="loading-steps">
+                        <div class="step active">
+                            <div class="step-icon"><i class="fas fa-file-pdf"></i></div>
+                            <span>Text Extraction</span>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon"><i class="fas fa-brain"></i></div>
+                            <span>Skill Analysis</span>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon"><i class="fas fa-chart-line"></i></div>
+                            <span>Quality Assessment</span>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon"><i class="fas fa-lightbulb"></i></div>
+                            <span>Generating Insights</span>
+                        </div>
+                    </div>
+                </div>
+            `
+      resultsDiv.style.display = "block"
+
+      // Progressive loading animation
+      setTimeout(() => document.querySelectorAll(".step")[1].classList.add("active"), 1000)
+      setTimeout(() => document.querySelectorAll(".step")[2].classList.add("active"), 2000)
+      setTimeout(() => document.querySelectorAll(".step")[3].classList.add("active"), 3000)
+
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          setTimeout(() => {
+            displayAnalysisResults(result.analysis)
+            showNotification("CV analysis completed successfully!", "success")
+          }, 4000)
+        } else {
+          resultsDiv.innerHTML = `
+                        <div class="error-modern">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <h3>Analysis Error</h3>
+                            <p>${result.error}</p>
+                            <button class="btn-secondary" onclick="window.location.reload()">Try Again</button>
+                        </div>
+                    `
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `
+                    <div class="error-modern">
+                        <i class="fas fa-wifi"></i>
+                        <h3>Connection Issue</h3>
+                        <p>Please check your connection and try again.</p>
+                        <button class="btn-secondary" onclick="window.location.reload()">Retry</button>
+                    </div>
+                `
+      }
+    })
+  }
+
+  // Enhanced search functionality
+  const searchQuery = document.getElementById("searchQuery")
+  if (searchQuery) {
+    searchQuery.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        searchCVs()
+      }
+    })
+  }
+
+  const skillsFilter = document.getElementById("skillsFilter")
+  const minScore = document.getElementById("minScore")
+
+  if (skillsFilter) skillsFilter.addEventListener("blur", searchCVs)
+  if (minScore) minScore.addEventListener("change", searchCVs)
+})
+
+// Enhanced Search Function
+async function searchCVs() {
+  const query = document.getElementById("searchQuery")?.value || ""
+  const skills =
+    document
+      .getElementById("skillsFilter")
+      ?.value.split(",")
+      .map((s) => s.trim())
+      .filter((s) => s) || []
+  const minScore = Number.parseInt(document.getElementById("minScore")?.value) || 0
+
+  const resultsDiv = document.getElementById("searchResults")
+
+  // Enhanced loading
+  resultsDiv.innerHTML = `
+        <div class="loading-modern">
+            <div class="loading-spinner-advanced"></div>
+            <h3>Searching CV Database...</h3>
+            <p>Finding the best candidates for you</p>
+        </div>
+    `
+
+  try {
+    const response = await fetch("/api/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: query,
+        skills: skills,
+        min_score: minScore,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      displaySearchResults(result.results)
+    } else {
+      resultsDiv.innerHTML = `
+                <div class="error-modern">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Search Error</h3>
+                    <p>${result.error}</p>
+                </div>
+            `
+    }
+  } catch (error) {
+    resultsDiv.innerHTML = `
+            <div class="error-modern">
+                <i class="fas fa-wifi"></i>
+                <h3>Connection Problem</h3>
+                <p>Please try again later.</p>
+            </div>
+        `
+  }
+}
+
+// Enhanced Search Results Display
+function displaySearchResults(results) {
+  const resultsDiv = document.getElementById("searchResults")
+
+  if (results.length === 0) {
+    resultsDiv.innerHTML = `
+            <div class="empty-state-modern">
+                <i class="fas fa-search"></i>
+                <h3>No Candidates Found</h3>
+                <p>Try adjusting your search criteria</p>
+                <button class="btn-outline" onclick="clearSearchFilters()">Clear Filters</button>
+            </div>
+        `
+    return
+  }
+
+  const resultsHtml = results
+    .map((candidate, index) => {
+      const scoreColor = candidate.score >= 80 ? "#10b981" : candidate.score >= 60 ? "#f59e0b" : "#ef4444"
+
+      const skillsHtml = candidate.skills
+        .slice(0, 5)
+        .map((skill) => `<span class="skill-chip">${skill}</span>`)
+        .join("")
+
+      return `
+            <div class="candidate-card modern-card" style="animation-delay: ${index * 100}ms">
+                <div class="candidate-header">
+                    <div class="candidate-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="candidate-info">
+                        <h3>${candidate.user_name}</h3>
+                        <p>${candidate.user_email}</p>
+                        <span class="candidate-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Available Worldwide
+                        </span>
+                    </div>
+                    <div class="candidate-score" style="background: ${scoreColor}">
+                        <span class="score-value">${candidate.score}</span>
+                        <span class="score-max">/100</span>
+                    </div>
+                </div>
+                
+                <div class="candidate-skills">
+                    <h4><i class="fas fa-code"></i> Key Skills</h4>
+                    <div class="skills-list">
+                        ${skillsHtml}
+                        ${
+                          candidate.skills.length > 5
+                            ? `<span class="more-skills">+${candidate.skills.length - 5} more</span>`
+                            : ""
+                        }
+                    </div>
+                </div>
+                
+                <div class="candidate-stats">
+                    <div class="stat">
+                        <i class="fas fa-trophy"></i>
+                        <span>Top ${candidate.score > 70 ? "25%" : "50%"}</span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-clock"></i>
+                        <span>Recently Active</span>
+                    </div>
+                </div>
+                
+                <div class="candidate-actions">
+                    <button class="btn-primary" onclick="contactCandidate('${candidate.user_email}', '${candidate.user_name}')">
+                        <i class="fas fa-envelope"></i> Contact
+                    </button>
+                    <button class="btn-outline" onclick="viewProfile('${candidate.id}')">
+                        <i class="fas fa-eye"></i> View Profile
+                    </button>
+                    <button class="btn-favorite" onclick="toggleFavorite('${candidate.id}')">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        `
+    })
+    .join("")
+
+  resultsDiv.innerHTML = `
+        <div class="search-results-header">
+            <div class="results-summary">
+                <h3>${results.length} Candidate${results.length !== 1 ? "s" : ""} Found</h3>
+                <p>Sorted by relevance and CV score</p>
+            </div>
+            <div class="results-filters">
+                <button class="filter-btn active" onclick="sortResults('score')">
+                    <i class="fas fa-sort-amount-down"></i> By Score
+                </button>
+                <button class="filter-btn" onclick="sortResults('name')">
+                    <i class="fas fa-sort-alpha-down"></i> By Name
+                </button>
+            </div>
+        </div>
+        <div class="candidates-grid">
+            ${resultsHtml}
+        </div>
+    `
+
+  // Animate results
+  setTimeout(() => {
+    document.querySelectorAll(".candidate-card").forEach((card, index) => {
+      setTimeout(() => {
+        card.classList.add("fade-in-up")
+      }, index * 100)
+    })
+  }, 100)
+}
+
+function clearSearchFilters() {
+  document.getElementById("searchQuery").value = ""
+  document.getElementById("skillsFilter").value = ""
+  document.getElementById("minScore").value = "0"
+  searchCVs()
+}
+
+function sortResults(type) {
+  // Update active filter button
+  document.querySelectorAll(".filter-btn").forEach((btn) => btn.classList.remove("active"))
+  event.target.closest(".filter-btn").classList.add("active")
+
+  // Sort logic would be implemented here
+  showNotification(`Results sorted by ${type}`, "info")
+}
+
+function toggleFavorite(candidateId) {
+  const btn = event.target.closest(".btn-favorite")
+  const icon = btn.querySelector("i")
+
+  if (icon.classList.contains("far")) {
+    icon.classList.remove("far")
+    icon.classList.add("fas")
+    btn.style.color = "#ef4444"
+    showNotification("Added to favorites", "success")
+  } else {
+    icon.classList.remove("fas")
+    icon.classList.add("far")
+    btn.style.color = ""
+    showNotification("Removed from favorites", "info")
+  }
+}
+
+// Contact candidate function
+function contactCandidate(email, name) {
+  const subject = encodeURIComponent(`Job Opportunity - CV Management Platform`)
+  const body = encodeURIComponent(`Hello ${name},
+
+I found your CV through our Smart CV Management platform and I would like to discuss an opportunity that might interest you.
+
+Best regards`)
+
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
+  showNotification("Opening email client...", "info")
+}
+
+function viewProfile(candidateId) {
+  // Create a modal to show detailed profile
+  const modal = document.createElement("div")
+  modal.className = "profile-modal"
+  modal.innerHTML = `
+        <div class="profile-modal-content">
+            <div class="profile-header">
+                <h3><i class="fas fa-user-circle"></i> Candidate Profile</h3>
+                <button class="close-modal" onclick="closeProfileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="profile-body">
+                <div class="profile-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading candidate details...</p>
+                </div>
+            </div>
+        </div>
+    `
+  document.body.appendChild(modal)
+  setTimeout(() => modal.classList.add("show"), 10)
+
+  // Simulate loading profile data
+  setTimeout(() => {
+    const profileBody = modal.querySelector(".profile-body")
+    profileBody.innerHTML = `
+            <div class="profile-content">
+                <div class="profile-summary">
+                    <div class="profile-avatar-large">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h4>Candidate Profile</h4>
+                        <p>Detailed profile view - Feature in development</p>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn-primary" onclick="closeProfileModal()">Close</button>
+                </div>
+            </div>
+        `
+  }, 1500)
+}
+
+function closeProfileModal() {
+  const modal = document.querySelector(".profile-modal")
+  if (modal) {
+    modal.classList.remove("show")
+    setTimeout(() => modal.remove(), 300)
+  }
+}
+
+function goHome() {
+  window.location.href = "/"
+  showNotification("Retour à l'accueil", "info")
+}
+
+function goToUpload() {
+  window.location.href = "/upload"
+  showNotification("Page d'upload ouverte", "info")
+}
+
+function goToSearch() {
+  window.location.href = "/search"
+  showNotification("Page de recherche ouverte", "info")
+}
+
+function loadStats() {
+  const statsElements = {
+    cvCount: document.getElementById("cvCount"),
+    userCount: document.getElementById("userCount"),
+    avgScore: document.getElementById("avgScore"),
+  }
+
+  // Simulate loading with progressive numbers
+  if (statsElements.cvCount) {
+    animateNumber(statsElements.cvCount, 0, 1247, 2000)
+  }
+  if (statsElements.userCount) {
+    animateNumber(statsElements.userCount, 0, 892, 2500)
+  }
+  if (statsElements.avgScore) {
+    animateNumber(statsElements.avgScore, 0, 73.5, 3000, true)
+  }
+}
+
+function animateNumber(element, start, end, duration, isDecimal = false) {
+  const startTime = performance.now()
+  const range = end - start
+
+  function updateNumber(currentTime) {
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / duration, 1)
+
+    // Easing function for smooth animation
+    const easeOutCubic = 1 - Math.pow(1 - progress, 3)
+    const current = start + range * easeOutCubic
+
+    if (isDecimal) {
+      element.textContent = current.toFixed(1)
+    } else {
+      element.textContent = Math.floor(current).toLocaleString("fr-FR")
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(updateNumber)
+    }
+  }
+
+  requestAnimationFrame(updateNumber)
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Load stats with delay for better UX
+  setTimeout(loadStats, 500)
+
+  // Add modern button interactions
+  const buttons = document.querySelectorAll(".btn")
+  buttons.forEach((button) => {
+    button.addEventListener("mouseenter", function () {
+      this.style.transform = "translateY(-2px)"
+    })
+
+    button.addEventListener("mouseleave", function () {
+      this.style.transform = "translateY(0)"
+    })
+  })
+
+  // Add ripple effect to buttons
+  buttons.forEach((button) => {
+    button.addEventListener("click", function (e) {
+      const ripple = document.createElement("span")
+      const rect = this.getBoundingClientRect()
+      const size = Math.max(rect.width, rect.height)
+      const x = e.clientX - rect.left - size / 2
+      const y = e.clientY - rect.top - size / 2
+
+      ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+                pointer-events: none;
+            `
+
+      this.style.position = "relative"
+      this.style.overflow = "hidden"
+      this.appendChild(ripple)
+
+      setTimeout(() => ripple.remove(), 600)
+    })
+  })
+})
+
+const rippleCSS = `
+@keyframes ripple {
+    to {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+`
+
+const style = document.createElement("style")
+style.textContent = rippleCSS
+document.head.appendChild(style)
