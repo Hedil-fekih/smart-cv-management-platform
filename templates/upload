@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Upload CV - Smart CV Management Platform{% endblock %}
+
+{% block content %}
+<div class="upload-section">
+    <h2 style="text-align: center; margin-bottom: 2rem; color: #333;">Upload Your CV for Analysis</h2>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="userName">Full Name</label>
+            <input type="text" id="userName" name="user_name" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="userEmail">Email Address</label>
+            <input type="email" id="userEmail" name="user_email" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label>CV File (PDF only)</label>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Drag and drop your CV here</h3>
+                <p>or click to browse files</p>
+                <input type="file" id="cvFile" name="cv_file" accept=".pdf" style="display: none;" required>
+            </div>
+            <div id="fileName" style="margin-top: 1rem; font-weight: 600; color: #667eea;"></div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button type="submit" class="btn">
+                <i class="fas fa-brain"></i> Analyze My CV
+            </button>
+        </div>
+    </form>
+
+    <div id="uploadResults" class="results" style="display: none;">
+        <!-- Results will be displayed here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('cvFile');
+    const fileName = document.getElementById('fileName');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Click to upload
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Enhanced drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            fileInput.files = files;
+            fileName.textContent = `Selected: ${files[0].name}`;
+            fileName.style.color = '#10b981';
+        } else {
+            showNotification('Please upload only PDF files.', 'error');
+        }
+    });
+
+    // File change
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileName.textContent = `Selected: ${e.target.files[0].name}`;
+            fileName.style.color = '#10b981';
+        }
+    });
+
+    // Form submission
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(uploadForm);
+        const resultsDiv = document.getElementById('uploadResults');
+        
+        // Loading animation
+        resultsDiv.innerHTML = `
+            <div class="loading-modern">
+                <div class="loading-spinner-advanced"></div>
+                <h3>AI Analysis in Progress...</h3>
+                <p>Processing your CV with advanced algorithms</p>
+            </div>
+        `;
+        resultsDiv.style.display = 'block';
+        
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                window.currentAnalysis = result.analysis;
+                displayAnalysisResults(result.analysis);
+                showNotification('CV analysis completed successfully!', 'success');
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="error-modern">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Analysis Error</h3>
+                        <p>${result.error}</p>
+                        <button class="btn-secondary" onclick="window.location.reload()">Try Again</button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="error-modern">
+                    <i class="fas fa-wifi"></i>
+                    <h3>Connection Problem</h3>
+                    <p>Please check your connection and try again.</p>
+                    <button class="btn-secondary" onclick="window.location.reload()">Try Again</button>
+                </div>
+            `;
+        }
+    });
+});
+
+function displayAnalysisResults(analysis) {
+    const resultsDiv = document.getElementById('uploadResults');
+    
+    resultsDiv.innerHTML = `
+        <div class="analysis-container">
+            <div class="score-header">
+                <div class="score-circle">
+                    <div class="score-progress">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="8" 
+                                    stroke-dasharray="283" stroke-dashoffset="${283 - (283 * analysis.score / 100)}" 
+                                    transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                        </svg>
+                        <div class="score-text">
+                            <span class="score-number">${analysis.score}</span>
+                            <span class="score-label">/100</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="score-info">
+                    <h2>CV Analysis Report</h2>
+                    <p>${getScoreDescription(analysis.score)}</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+                <div style="background: #f8fafc; padding: 2rem; border-radius: 15px;">
+                    <h3><i class="fas fa-code" style="color: #667eea;"></i> Skills Detected</h3>
+                    <div style="margin-top: 1rem;">
+                        ${analysis.skills.map(skill => `<span style="display: inline-block; background: #667eea; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; margin: 0.2rem; font-size: 0.9rem;">${skill}</span>`).join('')}
+                        ${analysis.skills.length === 0 ? '<p style="color: #666;">No technical skills detected</p>' : ''}
+                    </div>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 2rem; border-radius: 15px;">
+                    <h3><i class="fas fa-briefcase" style="color: #667eea;"></i> Professional Experience</h3>
+                    <p style="font-size: 2rem; font-weight: bold; color: #667eea; margin: 0.5rem 0;">${analysis.experience.length}</p>
+                    <p style="color: #666;">experience(s) found</p>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                <h3><i class="fas fa-lightbulb" style="color: #667eea;"></i> Recommendations</h3>
+                <ul style="margin-top: 1rem;">
+                    ${analysis.recommendations.map(rec => `<li style="margin: 0.5rem 0; color: #333;">${rec}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div style="background: #f8fafc; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                <h3><i class="fas fa-address-card" style="color: #667eea;"></i> Contact Information</h3>
+                <div style="margin-top: 1rem;">
+                    <p><i class="fas fa-envelope" style="color: ${analysis.contact.email ? '#10b981' : '#ef4444'};"></i> Email: ${analysis.contact.email || 'Not detected'}</p>
+                    <p><i class="fas fa-phone" style="color: ${analysis.contact.phone ? '#10b981' : '#ef4444'};"></i> Phone: ${analysis.contact.phone || 'Not detected'}</p>
+                </div>
+            </div>
+
+            <div class="actions-section">
+                <button class="btn" onclick="downloadReport()">
+                    <i class="fas fa-download"></i> Download Report
+                </button>
+                <button class="btn-outline" onclick="window.location.reload()">
+                    <i class="fas fa-upload"></i> Analyze Another CV
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function getScoreDescription(score) {
+    if (score >= 85) return "Excellent! Your CV really stands out.";
+    if (score >= 70) return "Very good! A few adjustments can make it perfect.";
+    if (score >= 55) return "Good foundation! Some improvements can make a big difference.";
+    return "Good potential! Follow our recommendations to improve it significantly.";
+}
+</script>
+{% endblock %}
