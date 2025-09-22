@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <h1>Smart CV Management Platform</h1>
+    <p>AI Analysis for Students, Graduates and Recruiters</p>
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('upload_page') }}" class="btn">
+            <i class="fas fa-upload"></i> Upload Your CV
+        </a>
+        <a href="{{ url_for('search_page') }}" class="btn btn-secondary" style="margin-left: 1rem;">
+            <i class="fas fa-search"></i> Search Profiles
+        </a>
+    </div>
+</section>
+
+<div class="stats" id="statsSection">
+    <div class="stat-card">
+        <span class="stat-number" id="totalCVs">0</span>
+        <div class="stat-label">CVs Analyzed</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number" id="totalUsers">0</span>
+        <div class="stat-label">Registered Users</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number" id="avgScore">0</span>
+        <div class="stat-label">Average Score</div>
+    </div>
+</div>
+
+<section class="features">
+    <div class="feature-card" onclick="window.location.href='{{ url_for('upload_page') }}'">
+        <div class="feature-icon">
+            <i class="fas fa-upload"></i>
+        </div>
+        <h3>Upload & Analyze</h3>
+        <p>Upload your PDF CV and get instant AI analysis with detailed feedback and improvement suggestions.</p>
+    </div>
+
+    <div class="feature-card" onclick="window.location.href='{{ url_for('search_page') }}'">
+        <div class="feature-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <h3>Smart Search</h3>
+        <p>Find perfect candidates using advanced filters including skills, experience level and CV quality scores.</p>
+    </div>
+
+    <div class="feature-card">
+        <div class="feature-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3>Performance Insights</h3>
+        <p>Get detailed analytics and insights to improve your CV and increase your chances of landing your dream job.</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        // Animate counters
+        animateCounter('totalCVs', data.total_cvs || 0);
+        animateCounter('totalUsers', data.total_users || 0);
+        animateCounter('avgScore', data.average_score || 0);
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+function animateCounter(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    const startValue = 0;
+    const duration = 2000;
+    const startTime = performance.now();
+    
+    function updateCounter(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+        
+        element.textContent = currentValue;
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+        }
+    }
+    
+    requestAnimationFrame(updateCounter);
+}
+</script>
+{% endblock %}
