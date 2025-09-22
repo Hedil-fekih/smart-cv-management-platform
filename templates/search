@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Search CVs - Smart CV Management Platform{% endblock %}
+
+{% block content %}
+<div class="search-section">
+    <h2 style="text-align: center; margin-bottom: 2rem; color: #333;">Search CV Database</h2>
+    
+    <div class="search-controls">
+        <input type="text" id="searchQuery" class="search-input" placeholder="Search by skills, experience or keywords...">
+        <button onclick="searchCVs()" class="btn">
+            <i class="fas fa-search"></i> Search
+        </button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+        <div class="form-group">
+            <label for="skillsFilter">Required Skills (comma separated)</label>
+            <input type="text" id="skillsFilter" class="form-input" placeholder="Python, JavaScript, SQL...">
+        </div>
+        
+        <div class="form-group">
+            <label for="minScore">Minimum CV Score</label>
+            <input type="number" id="minScore" class="form-input" min="0" max="100" placeholder="0-100">
+        </div>
+    </div>
+
+    <div id="searchResults" class="results">
+        <div style="text-align: center; padding: 2rem; color: #666;">
+            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <p>Enter search criteria and click Search to find candidates</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchQuery = document.getElementById('searchQuery');
+    searchQuery.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchCVs();
+        }
+    });
+});
+
+async function searchCVs() {
+    const query = document.getElementById('searchQuery').value || '';
+    const skills = document.getElementById('skillsFilter').value.split(',').map(s => s.trim()).filter(s => s) || [];
+    const minScore = parseInt(document.getElementById('minScore').value) || 0;
+    
+    const resultsDiv = document.getElementById('searchResults');
+    
+    resultsDiv.innerHTML = `
+        <div class="loading-modern">
+            <div class="loading-spinner-advanced"></div>
+            <h3>Searching CV Database...</h3>
+            <p>Finding the best candidates for you</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: query,
+                skills: skills,
+                min_score: minScore
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displaySearchResults(result.results);
+        } else {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                    <h3>Search Error</h3>
+                    <p>${result.error}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `
+            <div style="text-align: center; padding: 2rem;">
+                <i class="fas fa-wifi" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                <h3>Connection Problem</h3>
+                <p>Please try again later.</p>
+            </div>
+        `;
+    }
+}
+
+function displaySearchResults(results) {
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        resultsDiv.innerHTML = `
+            <div style="text-align: center; padding: 2rem;">
+                <i class="fas fa-search" style="font-size: 3rem; color: #666; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <h3>No Candidates Found</h3>
+                <p>Try adjusting your search criteria</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const resultsHtml = results.map(candidate => {
+        const scoreColor = candidate.score >= 80 ? '#10b981' : 
+                          candidate.score >= 60 ? '#f59e0b' : '#ef4444';
+        
+        const skillsHtml = candidate.skills.slice(0, 5).map(skill => 
+            `<span style="display: inline-block; background: #667eea; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; margin: 0.2rem; font-size: 0.8rem;">${skill}</span>`
+        ).join('');
+        
+        return `
+            <div style="background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="margin: 0; color: #333;">${candidate.user_name}</h3>
+                        <p style="margin: 0.5rem 0; color: #666;">${candidate.user_email}</p>
+                    </div>
+                    <div style="background: ${scoreColor}; color: white; padding: 0.5rem 1rem; border-radius: 25px; font-weight: bold;">
+                        ${candidate.score}/100
+                    </div>
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-code" style="color: #667eea;"></i> Key Skills</h4>
+                    <div>${skillsHtml}</div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn" onclick="contactCandidate('${candidate.user_email}', '${candidate.user_name}')">
+                        <i class="fas fa-envelope"></i> Contact
+                    </button>
+                    <button class="btn-outline" onclick="viewProfile('${candidate.id}')">
+                        <i class="fas fa-eye"></i> View Profile
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    resultsDiv.innerHTML = `
+        <div style="margin-bottom: 2rem;">
+            <h3>${results.length} Candidate${results.length !== 1 ? 's' : ''} Found</h3>
+            <p style="color: #666;">Sorted by relevance and CV score</p>
+        </div>
+        ${resultsHtml}
+    `;
+}
+
+function contactCandidate(email, name) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); display: flex; align-items: center; 
+        justify-content: center; z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 500px; width: 90%;">
+            <h3 style="margin-top: 0;">Contact ${name}</h3>
+            <p><strong>Email:</strong> ${email}</p>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button onclick="window.open('mailto:${email}?subject=Job Opportunity&body=Hello ${name},%0A%0AI found your CV through our platform and would like to discuss an opportunity.%0A%0ABest regards', '_blank')" 
+                        style="flex: 1; padding: 0.8rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Open Email Client
+                </button>
+                <button onclick="copyToClipboard('${email}')" 
+                        style="flex: 1; padding: 0.8rem; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Copy Email
+                </button>
+                <button onclick="this.closest('div').parentElement.remove()" 
+                        style="padding: 0.8rem 1.5rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function viewProfile(candidateId) {
+    fetch(`/api/profile/${candidateId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showProfileModal(data.profile);
+            } else {
+                showNotification('Error loading profile: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Connection error loading profile', 'error');
+        });
+}
+
+function showProfileModal(profile) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); display: flex; align-items: center; 
+        justify-content: center; z-index: 1000; overflow-y: auto;
+    `;
+    
+    const skillsHtml = profile.skills.map(skill => 
+        `<span style="display: inline-block; background: #667eea; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; margin: 0.2rem; font-size: 0.8rem;">${skill}</span>`
+    ).join('');
+    
+    const experienceHtml = profile.experience.map(exp => 
+        `<li style="margin: 0.5rem 0; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">${exp}</li>`
+    ).join('');
+    
+    const scoreColor = profile.score >= 80 ? '#10b981' : 
+                      profile.score >= 60 ? '#f59e0b' : '#ef4444';
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 700px; width: 90%; max-height: 90%; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem;">
+                <div>
+                    <h2 style="margin: 0; color: #333;">${profile.user_name}</h2>
+                    <p style="margin: 0.5rem 0; color: #666;">${profile.user_email}</p>
+                    <p style="margin: 0; color: #888; font-size: 0.9rem;">Uploaded: ${new Date(profile.uploaded_at).toLocaleDateString()}</p>
+                </div>
+                <div style="background: ${scoreColor}; color: white; padding: 1rem 1.5rem; border-radius: 25px; font-weight: bold; font-size: 1.2rem;">
+                    ${profile.score}/100
+                </div>
+            </div>
+            
+            <div style="margin: 2rem 0;">
+                <h3 style="color: #333; border-bottom: 2px solid #667eea; padding-bottom: 0.5rem;">
+                    <i class="fas fa-code" style="color: #667eea;"></i> Technical Skills
+                </h3>
+                <div style="margin: 1rem 0;">${skillsHtml || '<p style="color: #666;">No skills detected</p>'}</div>
+            </div>
+            
+            <div style="margin: 2rem 0;">
+                <h3 style="color: #333; border-bottom: 2px solid #667eea; padding-bottom: 0.5rem;">
+                    <i class="fas fa-briefcase" style="color: #667eea;"></i> Professional Experience
+                </h3>
+                <ul style="list-style: none; padding: 0; margin: 1rem 0;">
+                    ${experienceHtml || '<li style="color: #666;">No detailed experience found</li>'}
+                </ul>
+            </div>
+            
+            <div style="margin: 2rem 0;">
+                <h3 style="color: #333; border-bottom: 2px solid #667eea; padding-bottom: 0.5rem;">
+                    <i class="fas fa-phone" style="color: #667eea;"></i> Contact Information
+                </h3>
+                <p><strong>Email:</strong> ${profile.contact.email || 'Not provided'}</p>
+                <p><strong>Phone:</strong> ${profile.contact.phone || 'Not provided'}</p>
+            </div>
+            
+            <div style="margin: 2rem 0;">
+                <h3 style="color: #333; border-bottom: 2px solid #667eea; padding-bottom: 0.5rem;">
+                    <i class="fas fa-lightbulb" style="color: #667eea;"></i> CV Recommendations
+                </h3>
+                <ul style="margin: 1rem 0;">
+                    ${profile.recommendations.map(rec => `<li style="margin: 0.5rem 0;">${rec}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
+                <button onclick="contactCandidate('${profile.user_email}', '${profile.user_name}')" 
+                        style="padding: 1rem 2rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                    <i class="fas fa-envelope"></i> Contact Candidate
+                </button>
+                <button onclick="this.closest('div').parentElement.remove()" 
+                        style="padding: 1rem 2rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('Email copied to clipboard!', 'success');
+    }).catch(() => {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification('Email copied to clipboard!', 'success');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#667eea';
+    
+    notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+        color: white; padding: 1rem 1.5rem; border-radius: 8px; 
+        z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+</script>
+
+<style>
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+</style>
+
+{% endblock %}
